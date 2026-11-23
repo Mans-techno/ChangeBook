@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
+from django.db.models import Avg
 from .models import Profile
 
 
@@ -26,3 +27,16 @@ class RegisterSerializer(serializers.ModelSerializer):
         user = User.objects.create_user(**validated_data)
         Profile.objects.create(user=user)
         return user
+
+
+class ProfileSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(source='user.username', read_only=True)
+    email = serializers.CharField(source='user.email', read_only=True)
+    rating = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Profile
+        fields = ['username', 'email', 'city', 'phone', 'rating']
+
+    def get_rating(self, obj):
+        return obj.user.reviews.aggregate(Avg('rating'))['rating__avg']
